@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  ai-chat-assistant:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=False
+      - MODEL_NAME=gpt-3.5-turbo
+      - MAX_TOKENS=1000
+      - TEMPERATURE=0.7
+      - DATABASE_URL=sqlite:///./chatbot.db
+      - SECRET_KEY=${SECRET_KEY}
+      - ML_MODEL_PATH=./models/
+      - SENTENCE_TRANSFORMER_MODEL=all-MiniLM-L6-v2
+    volumes:
+      - ./models:/app/models
+      - ./chatbot.db:/app/chatbot.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

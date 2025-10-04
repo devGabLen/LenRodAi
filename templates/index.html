@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="description" content="AI Chat Assistant - Sistema de Inteligencia Artificial">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>AI Chat Assistant</h1>
+                        <span class="subtitle">Sistema de Inteligencia Artificial</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" title="Configuración">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button class="btn-icon" title="Ayuda">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h3>Conversaciones</h3>
+                    <button class="btn-new-chat" id="newChatBtn">
+                        <i class="fas fa-plus"></i>
+                        Nueva Conversación
+                    </button>
+                </div>
+                
+                <div class="conversation-list" id="conversationList">
+                    <div class="conversation-item">
+                        <div class="conversation-title">Bienvenida al Sistema</div>
+                        <div class="conversation-preview">Sistema inicializado correctamente...</div>
+                        <div class="conversation-time">Hace 2 minutos</div>
+                    </div>
+                </div>
+                
+                <div class="sidebar-footer">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">Usuario</div>
+                            <div class="user-status">En línea</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="chat-area">
+                <div class="chat-container">
+                    <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-content">
+                        <div class="welcome-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h2>Sistema Inicializado</h2>
+                        <p>Asistente de IA listo para procesar solicitudes. Sistema operativo: AI Assistant v1.0 - Modo: INTERACTIVO</p>
+                        <div class="quick-actions">
+                            <button class="quick-action-btn" data-prompt="Explícame sobre inteligencia artificial">
+                                <i class="fas fa-brain"></i>
+                                <span>Análisis IA</span>
+                            </button>
+                            <button class="quick-action-btn" data-prompt="Ayúdame a escribir un email profesional">
+                                <i class="fas fa-envelope"></i>
+                                <span>Comunicación</span>
+                            </button>
+                            <button class="quick-action-btn" data-prompt="Analiza este problema y dame soluciones">
+                                <i class="fas fa-cogs"></i>
+                                <span>Procesamiento</span>
+                            </button>
+                            <button class="quick-action-btn" data-prompt="Cuéntame una historia creativa">
+                                <i class="fas fa-palette"></i>
+                                <span>Creatividad</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                </div>
+                
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span class="typing-text">Sistema procesando...</span>
+                </div>
+
+                    <div class="chat-input-container">
+                        <div class="input-wrapper">
+                            <input type="text" class="chat-input" id="messageInput" placeholder="Escribe tu mensaje..." maxlength="2000">
+                            <button class="btn-attachment" title="Adjuntar archivo">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="btn-voice" title="Grabar audio">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                        <button class="btn-send" id="sendBtn" title="Enviar mensaje">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <div class="character-counter">
+                            <span id="charCount">0</span>/2000
+                        </div>
+                        <div class="input-help">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Enter: Enviar | Shift+Enter: Nueva línea</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/chat.js"></script>
+    <script src="/static/js/websocket.js"></script>
+    <script src="/static/js/ui.js"></script>
+    
+</body>
+</html>

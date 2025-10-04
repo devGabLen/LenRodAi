@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant - Asistente Inteligente</title>
+    <link rel="stylesheet" href="/static/css/tron.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="description" content="Asistente de chat inteligente con procesamiento de lenguaje natural y aprendizaje automático">
+</head>
+<body>
+    
+    <div class="particles" id="particles"></div>
+    
+    
+    <div class="status-indicator" id="statusIndicator">
+        <i class="fas fa-circle"></i>
+        <span>Conectado</span>
+    </div>
+    
+    
+    <button class="theme-toggle" id="themeBtn" title="Cambiar tema">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="chat-container">
+        
+        <header class="chat-header">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-robot glitch"></i>
+                </div>
+                <div class="logo-text">
+                    <h1 class="chat-title">AI ASSISTANT</h1>
+                    <span class="chat-subtitle">SISTEMA DE INTELIGENCIA ARTIFICIAL</span>
+                </div>
+            </div>
+        </header>
+
+        
+        <main class="app-main">
+            
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h3>Conversaciones</h3>
+                    <button class="btn-new-chat" id="newChatBtn">
+                        <i class="fas fa-plus"></i>
+                        Nueva conversación
+                    </button>
+                </div>
+                <div class="conversation-list" id="conversationList">
+                    
+                </div>
+                <div class="sidebar-footer">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-details">
+                            <span class="user-name">Usuario</span>
+                            <span class="user-status">En línea</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            
+            <section class="chat-area">
+                <div class="chat-container">
+                    
+                    <div class="welcome-screen" id="welcomeScreen">
+                        <div class="welcome-content">
+                            <div class="welcome-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <h2>¡Hola! Soy tu Asistente IA</h2>
+                            <p>Estoy aquí para ayudarte con cualquier pregunta o tarea que tengas. 
+                               Puedo ayudarte con información, análisis, creatividad y mucho más.</p>
+                            <div class="quick-actions">
+                                <button class="quick-action-btn" data-prompt="Explícame sobre inteligencia artificial">
+                                    <i class="fas fa-brain"></i>
+                                    <span>IA y ML</span>
+                                </button>
+                                <button class="quick-action-btn" data-prompt="Ayúdame a escribir un email profesional">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>Redacción</span>
+                                </button>
+                                <button class="quick-action-btn" data-prompt="Analiza este problema y dame soluciones">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <span>Análisis</span>
+                                </button>
+                                <button class="quick-action-btn" data-prompt="Cuéntame una historia creativa">
+                                    <i class="fas fa-palette"></i>
+                                    <span>Creatividad</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        
+                    </div>
+
+                    
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span class="typing-text">El asistente está escribiendo...</span>
+                    </div>
+                </div>
+
+                
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <div class="input-actions">
+                            <button class="btn-icon" id="attachBtn" title="Adjuntar archivo">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="btn-icon" id="voiceBtn" title="Grabación de voz">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
+                        <div class="input-field-container">
+                            <textarea 
+                                id="messageInput" 
+                                placeholder="Escribe tu mensaje aquí..."
+                                rows="1"
+                                maxlength="2000"
+                            ></textarea>
+                            <div class="input-counter">
+                                <span id="charCounter">0</span>/2000
+                            </div>
+                        </div>
+                        <button class="btn-send" id="sendBtn" title="Enviar mensaje">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <span class="input-hint">
+                            <i class="fas fa-info-circle"></i>
+                            Presiona Enter para enviar, Shift+Enter para nueva línea
+                        </span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Configuración</h3>
+                    <button class="btn-close" id="closeSettingsBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h4>Personalización</h4>
+                        <div class="setting-item">
+                            <label for="aiPersonality">Personalidad del Asistente</label>
+                            <select id="aiPersonality">
+                                <option value="professional">Profesional</option>
+                                <option value="friendly">Amigable</option>
+                                <option value="creative">Creativo</option>
+                                <option value="analytical">Analítico</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="responseLength">Longitud de Respuesta</label>
+                            <select id="responseLength">
+                                <option value="short">Corta</option>
+                                <option value="medium" selected>Media</option>
+                                <option value="long">Larga</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Interfaz</h4>
+                        <div class="setting-item">
+                            <label for="theme">Tema</label>
+                            <select id="theme">
+                                <option value="light" selected>Claro</option>
+                                <option value="dark">Oscuro</option>
+                                <option value="auto">Automático</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="fontSize">Tamaño de Fuente</label>
+                            <select id="fontSize">
+                                <option value="small">Pequeño</option>
+                                <option value="medium" selected>Mediano</option>
+                                <option value="large">Grande</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="resetSettingsBtn">Restablecer</button>
+                    <button class="btn-primary" id="saveSettingsBtn">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Inicializando asistente...</p>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/chat.js"></script>
+    <script src="/static/js/websocket.js"></script>
+    <script src="/static/js/ui.js"></script>
+</body>
+</html>
