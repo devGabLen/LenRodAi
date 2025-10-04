@@ -1,8 +1,3 @@
-/**
- * AI Chat Assistant - Módulo WebSocket
- * Manejo de conexiones en tiempo real
- */
-
 class WebSocketManager {
     constructor() {
         this.ws = null;
@@ -16,9 +11,6 @@ class WebSocketManager {
         this.heartbeatTimeout = null;
     }
     
-    /**
-     * Conectar al WebSocket
-     */
     async connect() {
         if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
             return;
@@ -30,12 +22,12 @@ class WebSocketManager {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws/chat`;
             
-            console.log('🔌 Conectando a WebSocket:', wsUrl);
+            console.log('Conectando a WebSocket:', wsUrl);
             
             this.ws = new WebSocket(wsUrl);
             
             this.ws.onopen = (event) => {
-                console.log(' WebSocket conectado');
+                console.log('WebSocket conectado');
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
                 this.startHeartbeat();
@@ -48,16 +40,15 @@ class WebSocketManager {
                     const data = JSON.parse(event.data);
                     this.handleMessage(data);
                 } catch (error) {
-                    console.error(' Error parseando mensaje WebSocket:', error);
+                    console.error('Error parseando mensaje WebSocket:', error);
                 }
             };
             
             this.ws.onclose = (event) => {
-                console.log(' WebSocket desconectado:', event.code, event.reason);
+                console.log('WebSocket desconectado:', event.code, event.reason);
                 this.isConnecting = false;
                 this.stopHeartbeat();
                 this.emit('disconnected', event);
-                
                 
                 if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
                     this.scheduleReconnect();
@@ -65,21 +56,18 @@ class WebSocketManager {
             };
             
             this.ws.onerror = (error) => {
-                console.error(' Error en WebSocket:', error);
+                console.error('Error en WebSocket:', error);
                 this.isConnecting = false;
                 this.emit('error', error);
             };
             
         } catch (error) {
-            console.error(' Error conectando WebSocket:', error);
+            console.error('Error conectando WebSocket:', error);
             this.isConnecting = false;
             this.emit('error', error);
         }
     }
     
-    /**
-     * Desconectar WebSocket
-     */
     disconnect() {
         if (this.ws) {
             this.ws.close(1000, 'Desconexión intencional');
@@ -89,9 +77,6 @@ class WebSocketManager {
         this.reconnectAttempts = this.maxReconnectAttempts; 
     }
     
-    /**
-     * Enviar mensaje
-     */
     sendMessage(data) {
         const message = {
             ...data,
@@ -102,20 +87,17 @@ class WebSocketManager {
         if (this.isConnected()) {
             try {
                 this.ws.send(JSON.stringify(message));
-                console.log('📤 Mensaje enviado:', message.type);
+                console.log('Mensaje enviado:', message.type);
             } catch (error) {
-                console.error('❌ Error enviando mensaje:', error);
+                console.error('Error enviando mensaje:', error);
                 this.queueMessage(message);
             }
         } else {
-            console.log('⏳ WebSocket no conectado, encolando mensaje');
+            console.log('WebSocket no conectado, encolando mensaje');
             this.queueMessage(message);
         }
     }
     
-    /**
-     * Enviar indicador de escritura
-     */
     sendTyping(isTyping) {
         this.sendMessage({
             type: 'typing',
@@ -124,9 +106,6 @@ class WebSocketManager {
         });
     }
     
-    /**
-     * Enviar actualización de contexto
-     */
     sendContextUpdate(context) {
         this.sendMessage({
             type: 'context_update',
@@ -134,11 +113,8 @@ class WebSocketManager {
         });
     }
     
-    /**
-     * Manejar mensajes recibidos
-     */
     handleMessage(data) {
-        console.log('📥 Mensaje recibido:', data.type);
+        console.log('Mensaje recibido:', data.type);
         
         switch (data.type) {
             case 'response':
@@ -166,21 +142,15 @@ class WebSocketManager {
                 break;
                 
             default:
-                console.warn('⚠️ Tipo de mensaje no reconocido:', data.type);
+                console.warn('Tipo de mensaje no reconocido:', data.type);
                 this.emit('unknown_message', data);
         }
     }
     
-    /**
-     * Verificar si está conectado
-     */
     isConnected() {
         return this.ws && this.ws.readyState === WebSocket.OPEN;
     }
     
-    /**
-     * Obtener estado de conexión
-     */
     getConnectionState() {
         if (!this.ws) return 'disconnected';
         
@@ -198,12 +168,9 @@ class WebSocketManager {
         }
     }
     
-    /**
-     * Programar reconexión
-     */
     scheduleReconnect() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.log('❌ Máximo de intentos de reconexión alcanzado');
+            console.log('Máximo de intentos de reconexión alcanzado');
             this.emit('max_reconnect_attempts_reached');
             return;
         }
@@ -211,16 +178,13 @@ class WebSocketManager {
         this.reconnectAttempts++;
         const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); 
         
-        console.log(`🔄 Reintentando conexión en ${delay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        console.log(`Reintentando conexión en ${delay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
         
         setTimeout(() => {
             this.connect();
         }, delay);
     }
     
-    /**
-     * Iniciar heartbeat
-     */
     startHeartbeat() {
         this.stopHeartbeat(); 
         
@@ -231,9 +195,6 @@ class WebSocketManager {
         }, 30000); 
     }
     
-    /**
-     * Detener heartbeat
-     */
     stopHeartbeat() {
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
@@ -246,24 +207,17 @@ class WebSocketManager {
         }
     }
     
-    /**
-     * Enviar ping
-     */
     sendPing() {
         this.sendMessage({
             type: 'ping'
         });
         
-        
         this.heartbeatTimeout = setTimeout(() => {
-            console.log('❌ Timeout de heartbeat, cerrando conexión');
+            console.log('Timeout de heartbeat, cerrando conexión');
             this.ws.close(1000, 'Heartbeat timeout');
         }, 10000); 
     }
     
-    /**
-     * Manejar pong
-     */
     handlePong() {
         if (this.heartbeatTimeout) {
             clearTimeout(this.heartbeatTimeout);
@@ -271,53 +225,36 @@ class WebSocketManager {
         }
     }
     
-    /**
-     * Encolar mensaje
-     */
     queueMessage(message) {
         this.messageQueue.push(message);
-        
         
         if (this.messageQueue.length > 100) {
             this.messageQueue.shift();
         }
     }
     
-    /**
-     * Procesar cola de mensajes
-     */
     processMessageQueue() {
         while (this.messageQueue.length > 0 && this.isConnected()) {
             const message = this.messageQueue.shift();
             try {
                 this.ws.send(JSON.stringify(message));
-                console.log('📤 Mensaje de cola enviado:', message.type);
+                console.log('Mensaje de cola enviado:', message.type);
             } catch (error) {
-                console.error('❌ Error enviando mensaje de cola:', error);
+                console.error('Error enviando mensaje de cola:', error);
                 this.messageQueue.unshift(message); 
                 break;
             }
         }
     }
     
-    /**
-     * Obtener ID de usuario
-     */
     getUserId() {
-        
         return localStorage.getItem('userId') || 'anonymous';
     }
     
-    /**
-     * Generar ID de mensaje
-     */
     generateMessageId() {
         return 'ws_msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
     
-    /**
-     * Sistema de eventos
-     */
     on(event, callback) {
         if (!this.eventListeners[event]) {
             this.eventListeners[event] = [];
@@ -337,15 +274,12 @@ class WebSocketManager {
                 try {
                     callback(data);
                 } catch (error) {
-                    console.error(`❌ Error en listener de evento ${event}:`, error);
+                    console.error(`Error en listener de evento ${event}:`, error);
                 }
             });
         }
     }
     
-    /**
-     * Obtener estadísticas de conexión
-     */
     getStats() {
         return {
             connectionState: this.getConnectionState(),
@@ -356,9 +290,6 @@ class WebSocketManager {
         };
     }
     
-    /**
-     * Configurar opciones de reconexión
-     */
     setReconnectOptions(options) {
         if (options.maxAttempts !== undefined) {
             this.maxReconnectAttempts = options.maxAttempts;
@@ -368,9 +299,6 @@ class WebSocketManager {
         }
     }
     
-    /**
-     * Limpiar recursos
-     */
     cleanup() {
         this.disconnect();
         this.eventListeners = {};
@@ -396,12 +324,12 @@ class AdminWebSocketManager extends WebSocketManager {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws/admin`;
             
-            console.log('🔌 Conectando a WebSocket de administración:', wsUrl);
+            console.log('Conectando a WebSocket de administración:', wsUrl);
             
             this.ws = new WebSocket(wsUrl);
             
             this.ws.onopen = (event) => {
-                console.log('✅ WebSocket de administración conectado');
+                console.log('WebSocket de administración conectado');
                 this.isConnecting = false;
                 this.isAdmin = true;
                 this.startHeartbeat();
@@ -413,12 +341,12 @@ class AdminWebSocketManager extends WebSocketManager {
                     const data = JSON.parse(event.data);
                     this.handleAdminMessage(data);
                 } catch (error) {
-                    console.error('❌ Error parseando mensaje de administración:', error);
+                    console.error('Error parseando mensaje de administración:', error);
                 }
             };
             
             this.ws.onclose = (event) => {
-                console.log('🔌 WebSocket de administración desconectado:', event.code, event.reason);
+                console.log('WebSocket de administración desconectado:', event.code, event.reason);
                 this.isConnecting = false;
                 this.isAdmin = false;
                 this.stopHeartbeat();
@@ -426,20 +354,20 @@ class AdminWebSocketManager extends WebSocketManager {
             };
             
             this.ws.onerror = (error) => {
-                console.error('❌ Error en WebSocket de administración:', error);
+                console.error('Error en WebSocket de administración:', error);
                 this.isConnecting = false;
                 this.emit('error', error);
             };
             
         } catch (error) {
-            console.error('❌ Error conectando WebSocket de administración:', error);
+            console.error('Error conectando WebSocket de administración:', error);
             this.isConnecting = false;
             this.emit('error', error);
         }
     }
     
     handleAdminMessage(data) {
-        console.log('📥 Mensaje de administración recibido:', data.type);
+        console.log('Mensaje de administración recibido:', data.type);
         
         switch (data.type) {
             case 'admin_stats':

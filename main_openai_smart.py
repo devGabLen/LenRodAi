@@ -1,8 +1,3 @@
-"""
-AI Chat Assistant - Versión Inteligente con OpenAI y Monitoreo de Tokens
-Detecta automáticamente cuando los tokens se acaban y muestra alertas
-"""
-
 import os
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -16,17 +11,16 @@ from datetime import datetime
 import openai
 import asyncio
 
-# Cargar configuración
 load_dotenv("config_temp.env")
 
-# Crear aplicación FastAPI
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
 app = FastAPI(
-    title="AI Chat Assistant - Smart OpenAI",
+    title="AI Chat Assistant - Smart Version",
     version="1.0.0",
     docs_url="/api/docs"
 )
 
-# Configurar CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,325 +29,279 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Montar archivos estáticos
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Configurar templates
 templates = Jinja2Templates(directory="templates")
 
-# Configurar OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# Estado del sistema
 class TokenMonitor:
     def __init__(self):
         self.openai_available = True
         self.last_error = None
-        self.token_status = "unknown"
-        self.usage_count = 0
         self.error_count = 0
+        self.last_check = None
+        self.consecutive_errors = 0
+        self.max_consecutive_errors = 3
         
-    def check_openai_status(self):
-        """Verificar estado de OpenAI"""
-        if not openai.api_key or openai.api_key == "your_openai_api_key_here":
-            self.openai_available = False
-            self.token_status = "no_api_key"
-            return False
-        
-        # Si hemos tenido muchos errores recientes, asumir que no hay tokens
-        if self.error_count > 3:
-            self.openai_available = False
-            self.token_status = "quota_exceeded"
-            return False
-            
-        return True
+    def check_openai_availability(self):
+        self.last_check = datetime.now()
+        return self.openai_available
     
-    def record_success(self):
-        """Registrar uso exitoso"""
-        self.usage_count += 1
-        self.error_count = 0
-        self.token_status = "available"
-        self.openai_available = True
-        
-    def record_error(self, error):
-        """Registrar error"""
-        self.error_count += 1
+    def handle_openai_error(self, error):
         self.last_error = str(error)
+        self.error_count += 1
+        self.consecutive_errors += 1
         
         if "quota" in str(error).lower() or "rate limit" in str(error).lower():
-            self.token_status = "quota_exceeded"
             self.openai_available = False
-        elif "api key" in str(error).lower():
-            self.token_status = "invalid_api_key"
+            print(f"OpenAI no disponible - Error de cuota: {error}")
+            return False
+        
+        if self.consecutive_errors >= self.max_consecutive_errors:
             self.openai_available = False
-        else:
-            self.token_status = "error"
+            print(f"OpenAI no disponible - Demasiados errores consecutivos: {self.consecutive_errors}")
+            return False
+        
+        return True
+    
+    def reset_errors(self):
+        self.consecutive_errors = 0
+        if self.error_count > 0:
+            self.openai_available = True
+            print("Errores de OpenAI reseteados - Disponible nuevamente")
+    
+    def get_status(self):
+        return {
+            "openai_available": self.openai_available,
+            "last_error": self.last_error,
+            "error_count": self.error_count,
+            "consecutive_errors": self.consecutive_errors,
+            "last_check": self.last_check.isoformat() if self.last_check else None
+        }
 
-# Instancia global del monitor
 token_monitor = TokenMonitor()
 
-# Almacenar conexiones WebSocket activas
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
-
+    
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-
+        print(f"Conexión WebSocket establecida. Total: {len(self.active_connections)}")
+    
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-
+        print(f"Conexión WebSocket cerrada. Total: {len(self.active_connections)}")
+    
     async def send_personal_message(self, message: str, websocket: WebSocket):
         try:
             await websocket.send_text(message)
-        except:
+        except Exception as e:
+            print(f"Error enviando mensaje personal: {e}")
             self.disconnect(websocket)
-
+    
     async def broadcast(self, message: str):
-        for connection in self.active_connections.copy():
+        disconnected = []
+        for connection in self.active_connections:
             try:
                 await connection.send_text(message)
-            except:
-                self.disconnect(connection)
+            except Exception as e:
+                print(f"Error en broadcast: {e}")
+                disconnected.append(connection)
+        
+        for connection in disconnected:
+            self.disconnect(connection)
 
 manager = ConnectionManager()
 
+def create_fallback_response(user_message: str, session_id: str = "default"):
+    fallback_responses = [
+        f"Entiendo tu mensaje: '{user_message}'. Actualmente estoy usando respuestas simuladas porque mi API de OpenAI no está disponible. ¡Pero sigo aquí para ayudarte!",
+        f"¡Hola! Recibí: '{user_message}'. Estoy funcionando en modo respaldo mientras se resuelve la conexión con OpenAI.",
+        f"Perfecto, capté tu mensaje: '{user_message}'. Aunque no tengo acceso a OpenAI en este momento, puedo simular respuestas inteligentes para ti.",
+        f"Gracias por tu mensaje: '{user_message}'. Estoy operando con respuestas de respaldo hasta que se restaure el servicio de IA.",
+        f"¡Muy bien! Tu mensaje '{user_message}' fue recibido. Funcionando en modo de respaldo con respuestas simuladas."
+    ]
+    
+    import random
+    response_text = random.choice(fallback_responses)
+    
+    return {
+        "response": response_text,
+        "timestamp": datetime.now().isoformat(),
+        "confidence": 0.7,
+        "context": {
+            "fallback_mode": True,
+            "openai_available": False,
+            "message_count": 1,
+            "session_duration": 0,
+            "user_preferences": {"language": "es"}
+        },
+        "model_info": {
+            "model": "fallback-simulator",
+            "version": "1.0.0",
+            "note": "Respuesta simulada - OpenAI no disponible"
+        },
+        "session_id": session_id,
+        "warning": "Los tokens de OpenAI se han agotado o hay un problema de conexión. Usando respuestas simuladas."
+    }
+
+async def call_openai_api(message: str, session_id: str = "default"):
+    try:
+        if not token_monitor.check_openai_availability():
+            return None
+        
+        response = openai.ChatCompletion.create(
+            model=os.getenv("MODEL_NAME", "gpt-3.5-turbo"),
+            messages=[
+                {"role": "system", "content": "Eres un asistente de IA útil y amigable. Responde en español de manera clara y concisa."},
+                {"role": "user", "content": message}
+            ],
+            max_tokens=int(os.getenv("MAX_TOKENS", 1000)),
+            temperature=float(os.getenv("TEMPERATURE", 0.7))
+        )
+        
+        token_monitor.reset_errors()
+        
+        ai_response = response.choices[0].message.content
+        
+        return {
+            "response": ai_response,
+            "timestamp": datetime.now().isoformat(),
+            "confidence": 0.9,
+            "context": {
+                "openai_available": True,
+                "message_count": 1,
+                "session_duration": 0,
+                "user_preferences": {"language": "es"}
+            },
+            "model_info": {
+                "model": os.getenv("MODEL_NAME", "gpt-3.5-turbo"),
+                "version": "1.0.0",
+                "usage": response.usage
+            },
+            "session_id": session_id
+        }
+        
+    except Exception as error:
+        print(f"Error llamando a OpenAI: {error}")
+        
+        if not token_monitor.handle_openai_error(error):
+            return None
+        
+        raise error
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    """Página principal"""
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/health")
 async def health_check():
-    """Verificar estado de la aplicación"""
-    token_monitor.check_openai_status()
-    
     return {
         "status": "healthy",
-        "message": "AI Chat Assistant is running",
-        "version": "1.0.0",
-        "openai_status": {
-            "available": token_monitor.openai_available,
-            "status": token_monitor.token_status,
-            "usage_count": token_monitor.usage_count,
-            "error_count": token_monitor.error_count,
-            "last_error": token_monitor.last_error
-        }
+        "timestamp": datetime.now().isoformat(),
+        "active_connections": len(manager.active_connections),
+        "openai_status": token_monitor.get_status()
+    }
+
+@app.get("/api/token-status")
+async def get_token_status():
+    return {
+        "status": token_monitor.get_status(),
+        "message": "OpenAI no disponible - Tokens agotados" if not token_monitor.openai_available else "OpenAI disponible",
+        "timestamp": datetime.now().isoformat()
     }
 
 @app.post("/api/chat/send")
 async def send_message(request: Request):
-    """Enviar mensaje al chatbot con detección inteligente de tokens"""
     try:
-        data = await request.json()
-        user_message = data.get("message", "")
+        body = await request.json()
+        message = body.get("message", "")
+        session_id = body.get("session_id", "default")
         
-        # Verificar estado de OpenAI
-        if not token_monitor.check_openai_status():
-            return create_fallback_response(user_message, token_monitor.token_status)
+        if not message.strip():
+            return {"error": "El mensaje no puede estar vacío"}
+        
+        if len(message) > 2000:
+            return {"error": "El mensaje es demasiado largo"}
         
         try:
-            # Intentar usar OpenAI (versión compatible)
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Eres un asistente de IA inteligente, sofisticado y profesional. Responde en español de manera útil, precisa y amigable."},
-                    {"role": "user", "content": user_message}
-                ],
-                max_tokens=1000,
-                temperature=0.7
-            )
+            response_data = await call_openai_api(message, session_id)
             
-            # Éxito con OpenAI
-            token_monitor.record_success()
-            ai_message = response.choices[0].message.content
-            
-            return {
-                "response": ai_message,
-                "session_id": "openai-session",
-                "confidence": 0.9,
-                "context": {
-                    "openai": True, 
-                    "model": "gpt-3.5-turbo",
-                    "tokens_used": response.usage.total_tokens,
-                    "status": "openai_success"
-                },
-                "timestamp": datetime.now().isoformat(),
-                "model_info": {
-                    "model": "gpt-3.5-turbo",
-                    "usage": response.usage.__dict__
-                }
-            }
-            
-        except Exception as openai_error:
-            # Error con OpenAI - registrar y usar fallback
-            token_monitor.record_error(openai_error)
-            return create_fallback_response(user_message, token_monitor.token_status, str(openai_error))
+            if response_data:
+                return response_data
+            else:
+                print("OpenAI no disponible, usando respuesta de respaldo")
+                return create_fallback_response(message, session_id)
+                
+        except Exception as error:
+            print(f"Error en API de OpenAI: {error}")
+            return create_fallback_response(message, session_id)
         
     except Exception as e:
-        return {
-            "error": f"Error: {str(e)}",
-            "message": "Lo siento, hubo un error procesando tu mensaje."
-        }
-
-def create_fallback_response(user_message: str, status: str, error_detail: str = None):
-    """Crear respuesta de respaldo cuando OpenAI no está disponible"""
-    
-    if status == "quota_exceeded":
-        response_text = f"""
-🚨 **TOKENS AGOTADOS** 🚨
-
-Tu mensaje: "{user_message}"
-
-**Estado:** Has excedido tu cuota de OpenAI
-**Solución:** 
-1. Ve a https://platform.openai.com/account/billing
-2. Agrega créditos a tu cuenta
-3. El chat volverá automáticamente a usar OpenAI
-
-**Respuesta simulada:** ¡Hola! Recibí tu mensaje pero estoy en modo de respaldo porque se agotaron los tokens de OpenAI. Una vez que agregues créditos, podré darte respuestas más inteligentes.
-        """
-    elif status == "invalid_api_key":
-        response_text = f"""
-🔑 **API KEY INVÁLIDA** 🔑
-
-Tu mensaje: "{user_message}"
-
-**Estado:** La API key de OpenAI no es válida
-**Solución:** 
-1. Verifica tu API key en config_temp.env
-2. Obtén una nueva key en https://platform.openai.com/api-keys
-
-**Respuesta simulada:** ¡Hola! Recibí tu mensaje pero hay un problema con la configuración de OpenAI.
-        """
-    elif status == "no_api_key":
-        response_text = f"""
-⚙️ **CONFIGURACIÓN REQUERIDA** ⚙️
-
-Tu mensaje: "{user_message}"
-
-**Estado:** No hay API key configurada
-**Solución:** 
-1. Configura OPENAI_API_KEY en config_temp.env
-2. Reinicia el servidor
-
-**Respuesta simulada:** ¡Hola! Recibí tu mensaje pero necesito configurar OpenAI para darte respuestas inteligentes.
-        """
-    else:
-        response_text = f"""
-⚠️ **MODO DE RESPALDO** ⚠️
-
-Tu mensaje: "{user_message}"
-
-**Estado:** OpenAI temporalmente no disponible
-**Error:** {error_detail or "Error desconocido"}
-
-**Respuesta simulada:** ¡Hola! Recibí tu mensaje pero estoy en modo de respaldo. Una vez que se resuelva el problema con OpenAI, podré darte respuestas más inteligentes.
-        """
-    
-    return {
-        "response": response_text,
-        "session_id": "fallback-session",
-        "confidence": 0.3,
-        "context": {
-            "fallback": True,
-            "openai_status": status,
-            "error_detail": error_detail,
-            "status": "fallback_mode"
-        },
-        "timestamp": datetime.now().isoformat(),
-        "model_info": {
-            "model": "fallback-simulator",
-            "openai_available": False
-        }
-    }
+        print(f"Error procesando mensaje: {e}")
+        return {"error": "Error interno del servidor"}
 
 @app.websocket("/ws/chat")
 async def websocket_endpoint(websocket: WebSocket):
-    """Endpoint WebSocket para chat en tiempo real con detección de tokens"""
     await manager.connect(websocket)
     try:
         while True:
-            # Recibir mensaje del cliente
             data = await websocket.receive_text()
             message_data = json.loads(data)
             
-            # Procesar el mensaje
             if message_data.get("type") == "message":
                 user_message = message_data.get("message", "")
                 session_id = message_data.get("session_id", "default")
                 
-                # Verificar estado de OpenAI
-                if not token_monitor.check_openai_status():
-                    # Usar respuesta de respaldo
-                    fallback_response = create_fallback_response(user_message, token_monitor.token_status)
+                try:
+                    response_data = await call_openai_api(user_message, session_id)
+                    
+                    if response_data:
+                        ai_response = {
+                            "type": "response",
+                            "message": response_data["response"],
+                            "confidence": response_data["confidence"],
+                            "timestamp": response_data["timestamp"],
+                            "session_id": session_id,
+                            "model_info": response_data["model_info"],
+                            "context": response_data["context"]
+                        }
+                    else:
+                        fallback_data = create_fallback_response(user_message, session_id)
+                        ai_response = {
+                            "type": "response",
+                            "message": fallback_data["response"],
+                            "confidence": fallback_data["confidence"],
+                            "timestamp": fallback_data["timestamp"],
+                            "session_id": session_id,
+                            "model_info": fallback_data["model_info"],
+                            "context": fallback_data["context"],
+                            "warning": fallback_data["warning"]
+                        }
+                    
+                    await manager.send_personal_message(json.dumps(ai_response), websocket)
+                    
+                except Exception as error:
+                    print(f"Error en WebSocket OpenAI: {error}")
+                    fallback_data = create_fallback_response(user_message, session_id)
                     ai_response = {
                         "type": "response",
-                        "message": fallback_response["response"],
-                        "confidence": fallback_response["confidence"],
-                        "timestamp": fallback_response["timestamp"],
+                        "message": fallback_data["response"],
+                        "confidence": fallback_data["confidence"],
+                        "timestamp": fallback_data["timestamp"],
                         "session_id": session_id,
-                        "context": fallback_response["context"],
-                        "model_info": fallback_response["model_info"]
+                        "model_info": fallback_data["model_info"],
+                        "context": fallback_data["context"],
+                        "warning": fallback_data["warning"]
                     }
-                else:
-                    try:
-                        # Intentar usar OpenAI (versión compatible)
-                        response = openai.ChatCompletion.create(
-                            model="gpt-3.5-turbo",
-                            messages=[
-                                {"role": "system", "content": "Eres un asistente de IA inteligente. Responde en español de manera útil y amigable."},
-                                {"role": "user", "content": user_message}
-                            ],
-                            max_tokens=500,
-                            temperature=0.7
-                        )
-                        
-                        # Éxito con OpenAI
-                        token_monitor.record_success()
-                        ai_response = {
-                            "type": "response",
-                            "message": response.choices[0].message.content,
-                            "confidence": 0.9,
-                            "timestamp": datetime.now().isoformat(),
-                            "session_id": session_id,
-                            "context": {
-                                "openai": True,
-                                "model": "gpt-3.5-turbo",
-                                "tokens_used": response.usage.total_tokens
-                            },
-                            "model_info": {
-                                "model": "gpt-3.5-turbo",
-                                "usage": response.usage.__dict__
-                            }
-                        }
-                        
-                    except Exception as openai_error:
-                        # Error con OpenAI
-                        token_monitor.record_error(openai_error)
-                        fallback_response = create_fallback_response(user_message, token_monitor.token_status, str(openai_error))
-                        ai_response = {
-                            "type": "response",
-                            "message": fallback_response["response"],
-                            "confidence": fallback_response["confidence"],
-                            "timestamp": fallback_response["timestamp"],
-                            "session_id": session_id,
-                            "context": fallback_response["context"],
-                            "model_info": fallback_response["model_info"]
-                        }
-                
-                # Enviar respuesta al cliente
-                await manager.send_personal_message(json.dumps(ai_response), websocket)
+                    await manager.send_personal_message(json.dumps(ai_response), websocket)
                 
             elif message_data.get("type") == "ping":
-                # Responder al ping
                 pong_response = {"type": "pong", "timestamp": datetime.now().isoformat()}
                 await manager.send_personal_message(json.dumps(pong_response), websocket)
                 
             elif message_data.get("type") == "typing":
-                # Manejar indicador de escritura
                 typing_response = {
                     "type": "typing",
                     "is_typing": message_data.get("is_typing", False),
@@ -367,62 +315,11 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"Error en WebSocket: {e}")
         manager.disconnect(websocket)
 
-@app.get("/api/token-status")
-async def get_token_status():
-    """Endpoint para verificar estado de tokens"""
-    token_monitor.check_openai_status()
-    
-    return {
-        "openai_available": token_monitor.openai_available,
-        "status": token_monitor.token_status,
-        "usage_count": token_monitor.usage_count,
-        "error_count": token_monitor.error_count,
-        "last_error": token_monitor.last_error,
-        "message": get_status_message(token_monitor.token_status)
-    }
-
-def get_status_message(status: str) -> str:
-    """Obtener mensaje descriptivo del estado"""
-    messages = {
-        "available": "✅ OpenAI disponible - Tokens disponibles",
-        "quota_exceeded": "🚨 Tokens agotados - Agrega créditos en OpenAI",
-        "invalid_api_key": "🔑 API key inválida - Verifica tu configuración",
-        "no_api_key": "⚙️ API key no configurada - Configura OPENAI_API_KEY",
-        "error": "⚠️ Error temporal - Reintentando...",
-        "unknown": "❓ Estado desconocido - Verificando..."
-    }
-    return messages.get(status, "❓ Estado desconocido")
-
 if __name__ == "__main__":
-    print("=" * 60)
-    print("AI Chat Assistant - Smart OpenAI Version")
-    print("=" * 60)
-    print("Caracteristicas:")
-    print("   • Deteccion automatica de tokens agotados")
-    print("   • Alertas cuando se acaban los creditos")
-    print("   • Modo de respaldo automatico")
-    print("   • Monitoreo de uso de OpenAI")
-    print("=" * 60)
-    
-    # Verificar configuración inicial
-    token_monitor.check_openai_status()
-    
-    if token_monitor.openai_available:
-        print("OpenAI configurado y disponible")
-    else:
-        print(f"OpenAI no disponible: {token_monitor.token_status}")
-        print("   El chat funcionara en modo de respaldo")
-    
-    print("=" * 60)
-    print("Abriendo en: http://localhost:8002")
-    print("Estado de tokens: http://localhost:8002/api/token-status")
-    print("=" * 60)
-    
     uvicorn.run(
         "main_openai_smart:app",
-        host="127.0.0.1",
-        port=8002,
-        reload=False,
-        log_level="warning",
-        access_log=False
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
     )

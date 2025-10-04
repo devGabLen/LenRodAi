@@ -1,8 +1,3 @@
-/**
- * AI Chat Assistant - Módulo de Interfaz de Usuario
- * Manejo de la interfaz y interacciones del usuario
- */
-
 class UI {
     constructor() {
         this.currentTheme = 'light';
@@ -14,9 +9,6 @@ class UI {
         };
     }
     
-    /**
-     * Mostrar pantalla de bienvenida
-     */
     showWelcomeScreen() {
         const welcomeScreen = document.getElementById('welcomeScreen');
         const chatMessages = document.getElementById('chatMessages');
@@ -27,9 +19,6 @@ class UI {
         }
     }
     
-    /**
-     * Ocultar pantalla de bienvenida
-     */
     hideWelcomeScreen() {
         const welcomeScreen = document.getElementById('welcomeScreen');
         const chatMessages = document.getElementById('chatMessages');
@@ -40,9 +29,6 @@ class UI {
         }
     }
     
-    /**
-     * Limpiar mensajes
-     */
     clearMessages() {
         const chatMessages = document.getElementById('chatMessages');
         if (chatMessages) {
@@ -50,39 +36,27 @@ class UI {
         }
     }
     
-    /**
-     * Agregar mensaje a la interfaz
-     */
     addMessage(message) {
         const chatMessages = document.getElementById('chatMessages');
         if (!chatMessages) return;
         
-        
         this.hideWelcomeScreen();
-        
         
         const messageElement = this.createMessageElement(message);
         
-        
         chatMessages.appendChild(messageElement);
         
-        
         this.scrollToBottom();
-        
         
         setTimeout(() => {
             messageElement.classList.add('show');
         }, 10);
     }
     
-    /**
-     * Crear elemento HTML para el mensaje
-     */
     createMessageElement(message) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.type}`;
         messageDiv.dataset.messageId = message.id;
-        
         
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
@@ -90,20 +64,16 @@ class UI {
             ? '<i class="fas fa-user"></i>' 
             : '<i class="fas fa-robot"></i>';
         
-        
         const content = document.createElement('div');
         content.className = 'message-content';
-        
         
         const text = document.createElement('div');
         text.className = 'message-text';
         text.innerHTML = this.formatMessage(message.content);
         
-        
         const timestamp = document.createElement('div');
         timestamp.className = 'message-time';
         timestamp.textContent = this.formatTimestamp(message.timestamp);
-        
         
         if (message.type === 'assistant') {
             const info = document.createElement('div');
@@ -122,7 +92,6 @@ class UI {
                 context.textContent = this.getContextSummary(message.context);
                 info.appendChild(context);
             }
-            
             
             const actions = document.createElement('div');
             actions.className = 'message-actions';
@@ -146,7 +115,6 @@ class UI {
             content.appendChild(actions);
         }
         
-        
         content.appendChild(text);
         content.appendChild(timestamp);
         
@@ -156,36 +124,22 @@ class UI {
         return messageDiv;
     }
     
-    /**
-     * Formatear mensaje con markdown básico
-     */
     formatMessage(content) {
-        
         let formatted = content
-            
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            
             .replace(/`(.*?)`/g, '<code>$1</code>')
-            
             .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-            
             .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-            
             .replace(/\n/g, '<br>');
         
         return formatted;
     }
     
-    /**
-     * Formatear timestamp
-     */
     formatTimestamp(timestamp) {
         const date = new Date(timestamp);
         const now = new Date();
         const diff = now - date;
-        
         
         if (diff < 24 * 60 * 60 * 1000 && date.toDateString() === now.toDateString()) {
             return date.toLocaleTimeString('es-ES', { 
@@ -193,7 +147,6 @@ class UI {
                 minute: '2-digit' 
             });
         }
-        
         
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
@@ -204,7 +157,6 @@ class UI {
             });
         }
         
-        
         return date.toLocaleDateString('es-ES', {
             day: '2-digit',
             month: '2-digit',
@@ -214,9 +166,6 @@ class UI {
         });
     }
     
-    /**
-     * Obtener resumen del contexto
-     */
     getContextSummary(context) {
         if (!context) return '';
         
@@ -237,9 +186,6 @@ class UI {
         return parts.join(' • ');
     }
     
-    /**
-     * Mostrar indicador de escritura
-     */
     showTypingIndicator() {
         const typingIndicator = document.getElementById('typingIndicator');
         if (typingIndicator) {
@@ -247,9 +193,6 @@ class UI {
         }
     }
     
-    /**
-     * Ocultar indicador de escritura
-     */
     hideTypingIndicator() {
         const typingIndicator = document.getElementById('typingIndicator');
         if (typingIndicator) {
@@ -257,9 +200,6 @@ class UI {
         }
     }
     
-    /**
-     * Scroll al final de los mensajes
-     */
     scrollToBottom() {
         const chatMessages = document.getElementById('chatMessages');
         if (chatMessages) {
@@ -267,9 +207,6 @@ class UI {
         }
     }
     
-    /**
-     * Mostrar modal de configuración
-     */
     showSettings() {
         const modal = document.getElementById('settingsModal');
         if (modal) {
@@ -279,9 +216,6 @@ class UI {
         }
     }
     
-    /**
-     * Ocultar modal de configuración
-     */
     hideSettings() {
         const modal = document.getElementById('settingsModal');
         if (modal) {
@@ -291,13 +225,9 @@ class UI {
         }
     }
     
-    /**
-     * Aplicar tema
-     */
     applyTheme(theme) {
         this.currentTheme = theme;
         document.documentElement.setAttribute('data-theme', theme);
-        
         
         const themeBtn = document.getElementById('themeBtn');
         if (themeBtn) {
@@ -307,9 +237,6 @@ class UI {
         }
     }
     
-    /**
-     * Aplicar tamaño de fuente
-     */
     applyFontSize(size) {
         const sizes = {
             small: '14px',
@@ -320,9 +247,6 @@ class UI {
         document.documentElement.style.fontSize = sizes[size] || sizes.medium;
     }
     
-    /**
-     * Actualizar lista de conversaciones
-     */
     updateConversationList(conversations) {
         const conversationList = document.getElementById('conversationList');
         if (!conversationList) return;
@@ -349,9 +273,6 @@ class UI {
         });
     }
     
-    /**
-     * Crear elemento de conversación
-     */
     createConversationElement(conversation) {
         const element = document.createElement('div');
         element.className = 'conversation-item';
@@ -370,12 +291,8 @@ class UI {
         return element;
     }
     
-    /**
-     * Cargar conversación
-     */
     async loadConversation(conversationId) {
         try {
-            
             document.querySelectorAll('.conversation-item').forEach(item => {
                 item.classList.remove('active');
             });
@@ -385,9 +302,7 @@ class UI {
                 activeItem.classList.add('active');
             }
             
-            
             this.showLoading('Cargando conversación...');
-            
             
             setTimeout(() => {
                 this.hideLoading();
@@ -400,9 +315,6 @@ class UI {
         }
     }
     
-    /**
-     * Actualizar estado de conexión
-     */
     updateConnectionStatus(isConnected) {
         const statusIndicator = document.querySelector('.user-status');
         if (statusIndicator) {
@@ -411,9 +323,6 @@ class UI {
         }
     }
     
-    /**
-     * Mostrar loading
-     */
     showLoading(message = 'Cargando...') {
         const loadingOverlay = document.getElementById('loadingOverlay');
         const loadingText = loadingOverlay?.querySelector('p');
@@ -426,9 +335,6 @@ class UI {
         }
     }
     
-    /**
-     * Ocultar loading
-     */
     hideLoading() {
         const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
@@ -436,9 +342,6 @@ class UI {
         }
     }
     
-    /**
-     * Mostrar notificación
-     */
     showNotification(message, type = 'info', duration = 5000) {
         const notification = {
             id: Date.now(),
@@ -450,15 +353,11 @@ class UI {
         this.notifications.push(notification);
         this.renderNotification(notification);
         
-        
         setTimeout(() => {
             this.removeNotification(notification.id);
         }, duration);
     }
     
-    /**
-     * Renderizar notificación
-     */
     renderNotification(notification) {
         const container = this.getNotificationContainer();
         
@@ -480,15 +379,11 @@ class UI {
         
         container.appendChild(element);
         
-        
         setTimeout(() => {
             element.classList.add('show');
         }, 10);
     }
     
-    /**
-     * Obtener contenedor de notificaciones
-     */
     getNotificationContainer() {
         let container = document.getElementById('notificationContainer');
         
@@ -502,9 +397,6 @@ class UI {
         return container;
     }
     
-    /**
-     * Obtener icono de notificación
-     */
     getNotificationIcon(type) {
         const icons = {
             success: 'check-circle',
@@ -516,9 +408,6 @@ class UI {
         return icons[type] || 'info-circle';
     }
     
-    /**
-     * Remover notificación
-     */
     removeNotification(id) {
         const element = document.querySelector(`[data-notification-id="${id}"]`);
         if (element) {
@@ -531,37 +420,22 @@ class UI {
         this.notifications = this.notifications.filter(n => n.id !== id);
     }
     
-    /**
-     * Mostrar error
-     */
     showError(message) {
         this.showNotification(message, 'error');
     }
     
-    /**
-     * Mostrar éxito
-     */
     showSuccess(message) {
         this.showNotification(message, 'success');
     }
     
-    /**
-     * Mostrar información
-     */
     showInfo(message) {
         this.showNotification(message, 'info');
     }
     
-    /**
-     * Mostrar advertencia
-     */
     showWarning(message) {
         this.showNotification(message, 'warning');
     }
     
-    /**
-     * Copiar mensaje al portapapeles
-     */
     async copyMessage(text) {
         try {
             await navigator.clipboard.writeText(text);
@@ -572,35 +446,22 @@ class UI {
         }
     }
     
-    /**
-     * Dar like a un mensaje
-     */
     likeMessage(messageId) {
-        
         this.showSuccess('¡Gracias por tu feedback!');
     }
     
-    /**
-     * Escapar HTML
-     */
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
     
-    /**
-     * Confirmar acción
-     */
     confirm(message, callback) {
         if (confirm(message)) {
             callback();
         }
     }
     
-    /**
-     * Mostrar modal personalizado
-     */
     showModal(title, content, buttons = []) {
         const modal = document.createElement('div');
         modal.className = 'modal show';
@@ -631,9 +492,6 @@ class UI {
         document.body.style.overflow = 'hidden';
     }
     
-    /**
-     * Ocultar modal personalizado
-     */
     hideModal() {
         const modal = document.getElementById('customModal');
         if (modal) {

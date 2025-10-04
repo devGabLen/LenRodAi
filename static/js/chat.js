@@ -1,8 +1,3 @@
-/**
- * AI Chat Assistant - Módulo de Chat
- * Manejo de mensajes y conversaciones
- */
-
 class Chat {
     constructor() {
         this.messageHistory = [];
@@ -10,12 +5,8 @@ class Chat {
         this.isTyping = false;
     }
     
-    /**
-     * Enviar mensaje al asistente
-     */
     async sendMessage(message, sessionId = null) {
         try {
-            
             if (!message || message.trim().length === 0) {
                 throw new Error('El mensaje no puede estar vacío');
             }
@@ -23,7 +14,6 @@ class Chat {
             if (message.length > 2000) {
                 throw new Error('El mensaje es demasiado largo (máximo 2000 caracteres)');
             }
-            
             
             const userMessage = {
                 id: this.generateId(),
@@ -33,15 +23,9 @@ class Chat {
                 sessionId: sessionId || this.currentSession
             };
             
-            
             this.messageHistory.push(userMessage);
-            
-            
             this.displayMessage(userMessage);
-            
-            
             const response = await this.sendToServer(userMessage);
-            
             return response;
             
         } catch (error) {
@@ -51,9 +35,6 @@ class Chat {
         }
     }
     
-    /**
-     * Enviar mensaje al servidor
-     */
     async sendToServer(message) {
         try {
             const response = await fetch('/api/chat/send', {
@@ -74,7 +55,6 @@ class Chat {
             
             const data = await response.json();
             
-            
             const aiMessage = {
                 id: this.generateId(),
                 type: 'assistant',
@@ -86,10 +66,7 @@ class Chat {
                 sessionId: data.session_id
             };
             
-            
             this.messageHistory.push(aiMessage);
-            
-            
             this.displayMessage(aiMessage);
             
             return aiMessage;
@@ -100,36 +77,23 @@ class Chat {
         }
     }
     
-    /**
-     * Mostrar mensaje en la interfaz
-     */
     displayMessage(message) {
         const messagesContainer = document.getElementById('chatMessages');
         if (!messagesContainer) return;
         
-        
         const messageElement = this.createMessageElement(message);
-        
-        
         messagesContainer.appendChild(messageElement);
-        
-        
         this.scrollToBottom();
-        
         
         setTimeout(() => {
             messageElement.classList.add('show');
         }, 10);
     }
     
-    /**
-     * Crear elemento HTML para el mensaje
-     */
     createMessageElement(message) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.type}`;
         messageDiv.dataset.messageId = message.id;
-        
         
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
@@ -137,20 +101,16 @@ class Chat {
             ? '<i class="fas fa-user"></i>' 
             : '<i class="fas fa-robot"></i>';
         
-        
         const content = document.createElement('div');
         content.className = 'message-content';
-        
         
         const text = document.createElement('div');
         text.className = 'message-text';
         text.innerHTML = this.formatMessage(message.content);
         
-        
         const timestamp = document.createElement('div');
         timestamp.className = 'message-time';
         timestamp.textContent = this.formatTimestamp(message.timestamp);
-        
         
         if (message.type === 'assistant') {
             const info = document.createElement('div');
@@ -173,7 +133,6 @@ class Chat {
             content.appendChild(info);
         }
         
-        
         content.appendChild(text);
         content.appendChild(timestamp);
         
@@ -183,34 +142,21 @@ class Chat {
         return messageDiv;
     }
     
-    /**
-     * Formatear mensaje con markdown básico
-     */
     formatMessage(content) {
-        
         let formatted = content
-            
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            
             .replace(/`(.*?)`/g, '<code>$1</code>')
-            
             .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-            
             .replace(/\n/g, '<br>');
         
         return formatted;
     }
     
-    /**
-     * Formatear timestamp
-     */
     formatTimestamp(timestamp) {
         const date = new Date(timestamp);
         const now = new Date();
         const diff = now - date;
-        
         
         if (diff < 24 * 60 * 60 * 1000 && date.toDateString() === now.toDateString()) {
             return date.toLocaleTimeString('es-ES', { 
@@ -218,7 +164,6 @@ class Chat {
                 minute: '2-digit' 
             });
         }
-        
         
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
@@ -229,7 +174,6 @@ class Chat {
             });
         }
         
-        
         return date.toLocaleDateString('es-ES', {
             day: '2-digit',
             month: '2-digit',
@@ -239,9 +183,6 @@ class Chat {
         });
     }
     
-    /**
-     * Obtener resumen del contexto
-     */
     getContextSummary(context) {
         if (!context) return '';
         
@@ -262,9 +203,6 @@ class Chat {
         return parts.join(' • ');
     }
     
-    /**
-     * Obtener contexto actual
-     */
     getContext() {
         return {
             messageCount: this.messageHistory.length,
@@ -274,9 +212,6 @@ class Chat {
         };
     }
     
-    /**
-     * Obtener duración de la sesión
-     */
     getSessionDuration() {
         if (this.messageHistory.length === 0) return 0;
         
@@ -289,11 +224,7 @@ class Chat {
         return Math.round((end - start) / 1000); 
     }
     
-    /**
-     * Obtener preferencias del usuario
-     */
     getUserPreferences() {
-        
         return {
             language: 'es',
             responseStyle: 'professional',
@@ -301,9 +232,6 @@ class Chat {
         };
     }
     
-    /**
-     * Limpiar historial de mensajes
-     */
     clearHistory() {
         this.messageHistory = [];
         const messagesContainer = document.getElementById('chatMessages');
@@ -312,9 +240,6 @@ class Chat {
         }
     }
     
-    /**
-     * Cargar historial de mensajes
-     */
     async loadHistory(sessionId) {
         try {
             const response = await fetch(`/api/chat/history/${sessionId}`);
@@ -325,9 +250,7 @@ class Chat {
             
             const data = await response.json();
             
-            
             this.clearHistory();
-            
             
             data.history.forEach(msg => {
                 const userMessage = {
@@ -359,9 +282,6 @@ class Chat {
         }
     }
     
-    /**
-     * Exportar conversación
-     */
     exportConversation(format = 'json') {
         if (this.messageHistory.length === 0) {
             this.showError('No hay mensajes para exportar');
@@ -394,7 +314,6 @@ class Chat {
                 throw new Error('Formato no soportado');
         }
         
-        
         const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -406,9 +325,6 @@ class Chat {
         URL.revokeObjectURL(url);
     }
     
-    /**
-     * Formatear conversación como texto
-     */
     formatConversationAsText(data) {
         let text = `Conversación exportada el ${new Date(data.exportedAt).toLocaleString('es-ES')}\n`;
         text += `Sesión: ${data.sessionId}\n`;
@@ -426,9 +342,6 @@ class Chat {
         return text;
     }
     
-    /**
-     * Buscar en el historial
-     */
     searchHistory(query) {
         if (!query || query.trim().length === 0) {
             return this.messageHistory;
@@ -441,9 +354,6 @@ class Chat {
         );
     }
     
-    /**
-     * Obtener estadísticas de la conversación
-     */
     getConversationStats() {
         const userMessages = this.messageHistory.filter(msg => msg.type === 'user');
         const aiMessages = this.messageHistory.filter(msg => msg.type === 'assistant');
@@ -467,9 +377,6 @@ class Chat {
         };
     }
     
-    /**
-     * Scroll al final de los mensajes
-     */
     scrollToBottom() {
         const messagesContainer = document.getElementById('chatMessages');
         if (messagesContainer) {
@@ -477,18 +384,10 @@ class Chat {
         }
     }
     
-    /**
-     * Mostrar error
-     */
     showError(message) {
-        
         console.error(message);
-        
     }
     
-    /**
-     * Generar ID único
-     */
     generateId() {
         return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }

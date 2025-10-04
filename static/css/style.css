@@ -619,8 +619,8 @@ body {
 .chat-input {
     width: 100%;
     padding: var(--spacing-md) var(--spacing-lg);
-    padding-left: 50px; /* Espacio para botón de adjuntar */
-    padding-right: 50px; /* Espacio para botón de voz */
+    padding-left: 50px;
+    padding-right: 50px;
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
